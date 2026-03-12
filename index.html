@@ -7,24 +7,41 @@
     <style>
         :root {
             --spotify-green: #1DB954;
-            --glass-bg: rgba(255, 255, 255, 0.07);
-            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
             --red: #ff4d4d;
         }
 
         body, html { margin: 0; padding: 0; height: 100%; background: #050505; color: white; font-family: 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
-        #bg-glow { position: fixed; width: 100vw; height: 100vh; background: radial-gradient(circle at 50% 50%, #1db95410 0%, #000 90%); z-index: -1; }
+        #bg-glow { position: fixed; width: 100vw; height: 100vh; background: radial-gradient(circle at 50% 50%, #1db95415 0%, #000 90%); z-index: -1; }
 
-        #app { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; }
-
-        /* --- NEW CONTROL BAR --- */
-        #top-bar { position: absolute; top: 20px; width: 90%; display: flex; justify-content: space-between; align-items: center; z-index: 100; pointer-events: none; }
-        #top-bar * { pointer-events: auto; }
+        /* Main Container */
+        #app { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         
-        #play-pause-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; backdrop-filter: blur(10px); }
-        
-        #pop-meter { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 8px 15px; border-radius: 20px; font-weight: 800; font-size: 0.9rem; backdrop-filter: blur(10px); display: none; }
+        /* The main "interaction zone" - clicks here advance the game */
+        #click-zone { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; cursor: pointer; }
 
+        /* Top Bar & Controls - Z-index must be higher than click-zone */
+        #top-bar { position: absolute; top: 20px; width: 90%; display: flex; justify-content: space-between; align-items: center; z-index: 20; }
+        
+        #play-pause-btn { 
+            background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; 
+            width: 50px; height: 50px; border-radius: 50%; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem; backdrop-filter: blur(10px); 
+        }
+        
+        #pop-meter { 
+            background: var(--glass-bg); border: 1px solid var(--glass-border); 
+            padding: 8px 18px; border-radius: 30px; font-weight: 900; font-size: 0.9rem; 
+            backdrop-filter: blur(10px); display: none; text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        #settings { position: absolute; top: 85px; display: flex; gap: 8px; z-index: 20; }
+        .timer-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; padding: 10px 16px; border-radius: 40px; cursor: pointer; font-size: 0.75rem; font-weight: 700; transition: 0.2s; }
+        .timer-btn.active { background: var(--spotify-green); border-color: var(--spotify-green); color: black; }
+
+        /* Cards */
+        #display-area { position: relative; z-index: 10; pointer-events: none; width: 100%; display: flex; flex-direction: column; align-items: center; }
         .glass-card {
             background: var(--glass-bg);
             backdrop-filter: blur(25px);
@@ -32,9 +49,9 @@
             border: 1px solid var(--glass-border);
             border-radius: 24px;
             padding: 2rem;
-            width: 85%;
-            max-width: 420px;
-            margin: 12px;
+            width: 80%;
+            max-width: 400px;
+            margin: 10px;
             box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
             transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
         }
@@ -42,39 +59,37 @@
         .hidden { opacity: 0; transform: translateY(20px); height: 0; padding: 0; margin: 0; overflow: hidden; border: none; }
         .visible { opacity: 1; transform: translateY(0); height: auto; }
 
-        h1 { font-size: 2.4rem; margin: 10px 0; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
-        h2 { font-size: 0.85rem; text-transform: uppercase; color: var(--spotify-green); letter-spacing: 4px; margin-bottom: 8px; font-weight: 600; }
+        h1 { font-size: 2.2rem; margin: 10px 0; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
+        h2 { font-size: 0.8rem; text-transform: uppercase; color: var(--spotify-green); letter-spacing: 4px; margin-bottom: 8px; font-weight: 600; opacity: 0.8; }
 
-        #countdown-container { margin-top: 15px; font-weight: bold; color: var(--spotify-green); font-size: 1.2rem; min-height: 24px; }
+        #countdown-container { margin-top: 15px; font-weight: bold; color: var(--spotify-green); font-size: 1.2rem; min-height: 24px; text-transform: uppercase; letter-spacing: 1px; }
 
-        #settings { position: absolute; top: 85px; display: flex; gap: 8px; z-index: 90; }
-        .timer-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; padding: 10px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; font-weight: 700; transition: 0.2s; }
-        .timer-btn.active { background: var(--spotify-green); border-color: var(--spotify-green); color: black; }
-
-        #status { position: absolute; bottom: 40px; font-size: 0.75rem; opacity: 0.3; text-transform: uppercase; letter-spacing: 3px; font-weight: 600; }
-        #login-btn { padding: 22px 55px; background: var(--spotify-green); border: none; border-radius: 60px; color: black; font-size: 1.2rem; font-weight: 900; cursor: pointer; }
+        #status { position: absolute; bottom: 30px; font-size: 0.7rem; opacity: 0.4; text-transform: uppercase; letter-spacing: 2px; z-index: 10; }
+        #login-btn { position: relative; z-index: 30; padding: 22px 55px; background: var(--spotify-green); border: none; border-radius: 60px; color: black; font-size: 1.2rem; font-weight: 900; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="bg-glow"></div>
 
-<div id="top-bar">
-    <button id="play-pause-btn" onclick="togglePlayback()">⏯</button>
-    <div id="pop-meter">POP: <span id="pop-val">--</span>%</div>
-</div>
+<div id="click-zone" onclick="handleInteraction()"></div>
 
-<div id="settings">
-    <button id="btn-0" class="timer-btn active" onclick="setTimer(0)">Manual</button>
-    <button id="btn-5" class="timer-btn" onclick="setTimer(5)">5s</button>
-    <button id="btn-15" class="timer-btn" onclick="setTimer(15)">15s</button>
-    <button id="btn-30" class="timer-btn" onclick="setTimer(30)">30s</button>
-</div>
+<div id="app">
+    <div id="top-bar">
+        <button id="play-pause-btn" onclick="togglePlayback()">⏯</button>
+        <div id="pop-meter">SCORE: <span id="pop-val">--</span></div>
+    </div>
 
-<div id="app" onclick="handleInteraction(event)">
+    <div id="settings">
+        <button id="btn-0" class="timer-btn active" onclick="setTimer(0)">Manual</button>
+        <button id="btn-5" class="timer-btn" onclick="setTimer(5)">5s</button>
+        <button id="btn-15" class="timer-btn" onclick="setTimer(15)">15s</button>
+        <button id="btn-30" class="timer-btn" onclick="setTimer(30)">30s</button>
+    </div>
+
     <button id="login-btn" onclick="startLoginFlow()">Connect Spotify</button>
     
-    <div id="display" style="display:none; width: 100%; flex-direction: column; align-items: center;">
+    <div id="display-area" style="display:none;">
         <div id="artist-card" class="glass-card hidden">
             <h2>Artist</h2>
             <h1 id="artist-text">---</h1>
@@ -91,6 +106,7 @@
             Reveal in: <span id="countdown-val">0</span>s
         </div>
     </div>
+
     <div id="status">Ready</div>
 </div>
 
@@ -102,43 +118,46 @@
     let step = 0;
     let timerValue = 0; 
     let countdownInterval = null;
+    let autoStepTimeout = null;
     let accessToken = localStorage.getItem('access_token');
-    let isPlaying = true;
 
     function setTimer(seconds) {
         timerValue = seconds;
         document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('btn-' + seconds).classList.add('active');
-        resetUIState();
+        killAllTimers();
+        resetUI();
     }
 
-    function resetUIState() {
-        step = 0;
+    function killAllTimers() {
         clearInterval(countdownInterval);
-        ['artist-card', 'title-card', 'year-card'].forEach(id => document.getElementById(id).className = 'glass-card hidden');
+        clearTimeout(autoStepTimeout);
         document.getElementById('countdown-container').style.display = 'none';
+    }
+
+    function resetUI() {
+        step = 0;
+        ['artist-card', 'title-card', 'year-card'].forEach(id => {
+            document.getElementById(id).className = 'glass-card hidden';
+        });
         document.getElementById('pop-meter').style.display = 'none';
+        document.getElementById('status').innerText = "Game Reset. Click to start.";
     }
 
-    // --- NEW: TOGGLE PLAY/PAUSE ---
     async function togglePlayback() {
-        // We fetch current state to decide if we play or pause
         const data = await spotifyFetch('https://api.spotify.com/v1/me/player');
-        const method = (data && data.is_playing) ? 'PUT' : 'PUT';
         const action = (data && data.is_playing) ? 'pause' : 'play';
-        
         await spotifyFetch(`https://api.spotify.com/v1/me/player/${action}`, 'PUT');
-        document.getElementById('play-pause-btn').innerText = action === 'play' ? '⏸' : '▶';
+        document.getElementById('play-pause-btn').innerText = (action === 'play') ? '⏸' : '▶';
     }
 
-    async function handleInteraction(e) {
-        if (e.target.closest('#settings') || e.target.closest('#top-bar') || e.target.id === 'login-btn') return;
+    function handleInteraction() {
         if (!accessToken) return;
-        clearInterval(countdownInterval); 
-        triggerNextStep();
+        killAllTimers();
+        advanceGame();
     }
 
-    async function triggerNextStep() {
+    function advanceGame() {
         step++;
         if (step > 5) step = 1;
         updateUI();
@@ -148,46 +167,54 @@
         const status = document.getElementById('status');
         
         if (step === 1) {
-            resetUIState();
-            status.innerText = "Skipping track...";
+            resetUI();
+            step = 1;
+            status.innerText = "Skipping...";
             await spotifyFetch('https://api.spotify.com/v1/me/player/next', 'POST');
-            setTimeout(() => { triggerNextStep(); }, 1500);
+            // Auto-transition to sync after 1.8s to give Spotify time to change tracks
+            autoStepTimeout = setTimeout(() => advanceGame(), 1800);
         } 
         else if (step === 2) {
+            status.innerText = "Syncing...";
             const data = await spotifyFetch('https://api.spotify.com/v1/me/player/currently-playing');
+            
             if (data && data.item) {
-                // Set texts
                 document.getElementById('artist-text').innerText = data.item.artists[0].name;
                 document.getElementById('title-text').innerText = data.item.name;
                 document.getElementById('year-text').innerText = data.item.album.release_date.split('-')[0];
                 
-                // --- POPULARITY METER ---
+                // Popularity Meter Logic
                 const pop = data.item.popularity;
                 const meter = document.getElementById('pop-meter');
-                const popVal = document.getElementById('pop-val');
-                popVal.innerText = pop;
+                document.getElementById('pop-val').innerText = pop + "%";
                 meter.style.display = 'block';
                 
-                if (pop <= 30) meter.style.color = '#ff4d4d'; // Red
-                else if (pop <= 60) meter.style.color = '#ffffff'; // White
-                else meter.style.color = '#1db954'; // Green
+                if (pop <= 30) meter.style.color = 'var(--red)';
+                else if (pop <= 60) meter.style.color = '#ffffff';
+                else meter.style.color = 'var(--spotify-green)';
                 
-                startCountdown();
+                status.innerText = "Track Loaded.";
+                if (timerValue > 0) startCountdown();
             } else {
-                status.innerText = "Spotify inactive!";
+                status.innerText = "Spotify not active! Play a song on your phone.";
                 step = 0;
             }
         } 
         else if (step >= 3 && step <= 5) {
-            const cards = ['artist-card', 'title-card', 'year-card'];
-            document.getElementById(cards[step-3]).className = 'glass-card visible';
-            if (step < 5) startCountdown();
-            else status.innerText = "Click for next song.";
+            const ids = ['artist-card', 'title-card', 'year-card'];
+            document.getElementById(ids[step - 3]).className = 'glass-card visible';
+            
+            if (step < 5) {
+                if (timerValue > 0) startCountdown();
+                else status.innerText = "Click to reveal more.";
+            } else {
+                status.innerText = "Round complete. Click to skip.";
+            }
         }
     }
 
     function startCountdown() {
-        if (timerValue === 0) return;
+        killAllTimers();
         let current = timerValue;
         const container = document.getElementById('countdown-container');
         const val = document.getElementById('countdown-val');
@@ -198,13 +225,13 @@
             current--;
             val.innerText = current;
             if (current <= 0) {
-                clearInterval(countdownInterval);
-                triggerNextStep();
+                killAllTimers();
+                advanceGame();
             }
         }, 1000);
     }
 
-    // --- AUTH LOGIC (SAME AS BEFORE) ---
+    // --- AUTH & FETCH ---
     async function spotifyFetch(url, method = 'GET') {
         try {
             const res = await fetch(url, {
@@ -212,7 +239,8 @@
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             if (res.status === 401) { startLoginFlow(); return null; }
-            return (res.status === 200) ? await res.json() : {};
+            if (res.status === 204) return {}; 
+            return await res.json();
         } catch (e) { return null; }
     }
 
@@ -262,10 +290,9 @@
         }
         if (accessToken) {
             document.getElementById('login-btn').style.display = 'none';
-            document.getElementById('display').style.display = 'flex';
+            document.getElementById('display-area').style.display = 'flex';
         }
     };
 </script>
 </body>
 </html>
-
