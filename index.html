@@ -7,196 +7,210 @@
     <style>
         :root {
             --spotify-green: #1DB954;
-            --glass-bg: rgba(255, 255, 255, 0.07);
-            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --red: #ff4d4d;
         }
 
         body, html { margin: 0; padding: 0; height: 100%; background: #050505; color: white; font-family: 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
-        #bg-glow { position: fixed; width: 100vw; height: 100vh; background: radial-gradient(circle at 50% 50%, #1db95410 0%, #000 90%); z-index: -1; }
+        #bg-glow { position: fixed; width: 100vw; height: 100vh; background: radial-gradient(circle at 50% 50%, #1db95415 0%, #000 90%); z-index: -1; }
 
-        #app { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; }
+        #app { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 
+        /* Top Bar */
+        #top-bar { position: absolute; top: 20px; width: 90%; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        #play-pause-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 1.4rem; backdrop-filter: blur(10px); }
+        #pop-meter { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 8px 18px; border-radius: 30px; font-weight: 900; font-size: 0.9rem; visibility: hidden; }
+
+        /* Timer Buttons */
+        #settings { position: absolute; top: 85px; display: flex; gap: 8px; z-index: 100; }
+        .timer-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; padding: 10px 16px; border-radius: 40px; cursor: pointer; font-size: 0.75rem; font-weight: 700; }
+        .timer-btn.active { background: var(--spotify-green); border-color: var(--spotify-green); color: black; }
+
+        /* Interaction Layer */
+        #click-surface { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer; }
+
+        /* Cards */
+        #display-area { position: relative; z-index: 20; pointer-events: none; width: 100%; display: flex; flex-direction: column; align-items: center; }
         .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 2rem;
-            width: 85%;
-            max-width: 420px;
-            margin: 12px;
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
-            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            background: var(--glass-bg); backdrop-filter: blur(25px); border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 2rem; width: 80%; max-width: 400px; margin: 10px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6); transition: all 0.5s ease;
         }
 
         .hidden { opacity: 0; transform: translateY(20px); height: 0; padding: 0; margin: 0; overflow: hidden; border: none; }
         .visible { opacity: 1; transform: translateY(0); height: auto; }
 
-        h1 { font-size: 2.4rem; margin: 10px 0; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
-        h2 { font-size: 0.85rem; text-transform: uppercase; color: var(--spotify-green); letter-spacing: 4px; margin-bottom: 8px; font-weight: 600; }
+        h1 { font-size: 2.2rem; margin: 10px 0; font-weight: 800; line-height: 1.1; }
+        h2 { font-size: 0.8rem; text-transform: uppercase; color: var(--spotify-green); letter-spacing: 4px; margin-bottom: 8px; font-weight: 600; opacity: 0.8; }
 
-        #countdown-container { margin-top: 15px; font-weight: bold; color: var(--spotify-green); font-size: 1.2rem; min-height: 24px; }
-
-        #settings { position: absolute; top: 30px; display: flex; gap: 8px; z-index: 100; }
-        .timer-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; padding: 12px 18px; border-radius: 40px; cursor: pointer; font-size: 0.8rem; font-weight: 700; transition: 0.2s; }
-        .timer-btn.active { background: var(--spotify-green); border-color: var(--spotify-green); color: black; box-shadow: 0 0 15px rgba(29, 185, 84, 0.4); }
-
-        #status { position: absolute; bottom: 40px; font-size: 0.75rem; opacity: 0.3; text-transform: uppercase; letter-spacing: 3px; font-weight: 600; }
-        #login-btn { padding: 22px 55px; background: var(--spotify-green); border: none; border-radius: 60px; color: black; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: 0.3s; }
+        #countdown-container { margin-top: 15px; font-weight: bold; color: var(--spotify-green); font-size: 1.2rem; display: none; }
+        #status { position: absolute; bottom: 30px; font-size: 0.7rem; opacity: 0.4; text-transform: uppercase; letter-spacing: 2px; }
+        #login-btn { z-index: 200; padding: 22px 55px; background: var(--spotify-green); border: none; border-radius: 60px; color: black; font-size: 1.2rem; font-weight: 900; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="bg-glow"></div>
+<div id="click-surface" onclick="handleInteraction()"></div>
 
-<div id="settings">
-    <button id="btn-0" class="timer-btn active" onclick="setTimer(0)">Manual</button>
-    <button id="btn-5" class="timer-btn" onclick="setTimer(5)">5s</button>
-    <button id="btn-15" class="timer-btn" onclick="setTimer(15)">15s</button>
-    <button id="btn-30" class="timer-btn" onclick="setTimer(30)">30s</button>
-</div>
+<div id="app">
+    <div id="top-bar">
+        <button id="play-pause-btn" onclick="event.stopPropagation(); togglePlayback()">⏯</button>
+        <div id="pop-meter">SCORE: <span id="pop-val">--</span>%</div>
+    </div>
 
-<div id="app" onclick="handleInteraction(event)">
+    <div id="settings">
+        <button id="btn-0" class="timer-btn active" onclick="event.stopPropagation(); setTimer(0)">Manual</button>
+        <button id="btn-5" class="timer-btn" onclick="event.stopPropagation(); setTimer(5)">5s</button>
+        <button id="btn-15" class="timer-btn" onclick="event.stopPropagation(); setTimer(15)">15s</button>
+        <button id="btn-30" class="timer-btn" onclick="event.stopPropagation(); setTimer(30)">30s</button>
+    </div>
+
     <button id="login-btn" onclick="startLoginFlow()">Connect Spotify</button>
     
-    <div id="display" style="display:none; width: 100%; flex-direction: column; align-items: center;">
-        <div id="artist-card" class="glass-card hidden">
-            <h2>Artist</h2>
-            <h1 id="artist-text">---</h1>
-        </div>
-        
-        <div id="title-card" class="glass-card hidden">
-            <h2>Song Title</h2>
-            <h1 id="title-text">---</h1>
-        </div>
-        
-        <div id="year-card" class="glass-card hidden">
-            <h2>Year</h2>
-            <h1 id="year-text">---</h1>
-        </div>
-
-        <div id="countdown-container" style="display:none;">
-            Reveal in: <span id="countdown-val">0</span>s
-        </div>
+    <div id="display-area" style="display:none;">
+        <div id="artist-card" class="glass-card hidden"><h2>Artist</h2><h1 id="artist-text">---</h1></div>
+        <div id="title-card" class="glass-card hidden"><h2>Song Title</h2><h1 id="title-text">---</h1></div>
+        <div id="year-card" class="glass-card hidden"><h2>Year</h2><h1 id="year-text">---</h1></div>
+        <div id="countdown-container">REVEAL IN: <span id="countdown-val">0</span>s</div>
     </div>
 
     <div id="status">Ready</div>
 </div>
 
 <script>
-    // --- 1. CONFIGURATION ---
     const CLIENT_ID = 'd6e1bc7f7b7a40c38db5e3232fe2b74a'; 
-    const REDIRECT_URI = 'https://DrieKraaien.github.io/Guessthesongspotify-DrieKraaien/';
+    const REDIRECT_URI = 'https://DrieKraaien.github.io/Guessthesongspotify-DrieKraaien/'; 
     const SCOPES = 'user-read-currently-playing user-modify-playback-state user-read-playback-state';
 
-    let step = 0;
+    let step = 0; // 0:Ready, 1:Syncing, 2:Guessing, 3:Artist, 4:Title, 5:Year
     let timerValue = 0; 
-    let currentCountdown = 0;
     let countdownInterval = null;
+    let isLocked = false;
     let accessToken = localStorage.getItem('access_token');
 
-    function setTimer(seconds) {
-        timerValue = seconds;
+    function setTimer(s) {
+        timerValue = s;
         document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + seconds).classList.add('active');
-        resetUIState();
-        document.getElementById('status').innerText = `Timer: ${seconds}s. Click for next song.`;
+        document.getElementById('btn-'+s).classList.add('active');
+        resetGame();
     }
 
-    function resetUIState() {
+    function resetGame() {
         step = 0;
-        stopCountdown();
-        ['artist-card', 'title-card', 'year-card'].forEach(id => document.getElementById(id).className = 'glass-card hidden');
-        document.getElementById('countdown-container').style.display = 'none';
-    }
-
-    function stopCountdown() {
+        isLocked = false;
         clearInterval(countdownInterval);
+        document.getElementById('pop-meter').style.visibility = 'hidden';
         document.getElementById('countdown-container').style.display = 'none';
+        ['artist-card', 'title-card', 'year-card'].forEach(id => document.getElementById(id).className = 'glass-card hidden');
+        document.getElementById('status').innerText = "Click to Start Next Song";
     }
 
-    function startCountdown() {
-        if (timerValue === 0) {
-            document.getElementById('status').innerText = "Click to reveal next info.";
-            return;
-        }
+    async function handleInteraction() {
+        if (!accessToken || isLocked) return;
         
-        stopCountdown();
-        currentCountdown = timerValue;
-        document.getElementById('countdown-container').style.display = 'block';
-        document.getElementById('countdown-val').innerText = currentCountdown;
-
-        countdownInterval = setInterval(() => {
-            currentCountdown--;
-            document.getElementById('countdown-val').innerText = currentCountdown;
-            
-            if (currentCountdown <= 0) {
-                stopCountdown();
-                triggerNextStep();
-            }
-        }, 1000);
-    }
-
-    async function handleInteraction(e) {
-        if (e.target.closest('#settings') || e.target.id === 'login-btn') return;
-        if (!accessToken) return;
-
-        stopCountdown(); 
-        triggerNextStep();
-    }
-
-    async function triggerNextStep() {
+        clearInterval(countdownInterval);
         step++;
         if (step > 5) step = 1;
-        updateUI();
+
+        if (step === 1) {
+            await startNewRound();
+        } else {
+            renderStep();
+        }
     }
 
-    async function updateUI() {
-        const status = document.getElementById('status');
+    async function startNewRound() {
+        isLocked = true;
+        resetGame();
+        step = 1;
+        document.getElementById('status').innerText = "Skipping & Syncing...";
         
-        if (step === 1) {
-            resetUIState();
-            step = 1;
-            status.innerText = "Skipping track...";
-            await spotifyFetch('https://api.spotify.com/v1/me/player/next', 'POST');
-            
-            // AUTO-TRANSITION to Step 2 after 1.5 seconds
-            setTimeout(() => {
-                triggerNextStep(); 
-            }, 1500);
-        } 
-        else if (step === 2) {
-            status.innerText = "Syncing music...";
+        // 1. Skip to the next track
+        await spotifyFetch('https://api.spotify.com/v1/me/player/next', 'POST');
+        
+        // 2. Wait 0.5 seconds for Spotify's servers to catch up
+        setTimeout(async () => {
             const data = await spotifyFetch('https://api.spotify.com/v1/me/player/currently-playing');
             
+            // Check if we actually got a track back
             if (data && data.item) {
+                // Populate the hidden cards
                 document.getElementById('artist-text').innerText = data.item.artists[0].name;
                 document.getElementById('title-text').innerText = data.item.name;
                 document.getElementById('year-text').innerText = data.item.album.release_date.split('-')[0];
                 
-                status.innerText = "Playing!";
-                startCountdown();
+                // --- POPULARITY SAFETY CHECK ---
+                const pop = data.item.popularity; // This is a number 0-100
+                const meter = document.getElementById('pop-meter');
+                const valSpan = document.getElementById('pop-val');
+
+                // If pop is 0, it's a valid number, so we check if it's NOT undefined/null
+                if (typeof pop !== 'undefined' && pop !== null) {
+                    valSpan.innerText = pop;
+                    meter.style.visibility = 'visible';
+                    
+                    // Apply your color logic
+                    if (pop <= 30) {
+                        meter.style.color = 'var(--red)';
+                    } else if (pop <= 60) {
+                        meter.style.color = '#ffffff';
+                    } else {
+                        meter.style.color = 'var(--spotify-green)';
+                    }
+                } else {
+                    // Hide the meter if there's no popularity score (e.g. Podcasts)
+                    meter.style.visibility = 'hidden';
+                }
+
+                document.getElementById('status').innerText = "Music Synced!";
+                isLocked = false;
+                step = 2; // Set state to "Waiting for Guess"
+                if (timerValue > 0) startCountdown();
             } else {
-                status.innerText = "Spotify inactive! Open app and play a song.";
+                document.getElementById('status').innerText = "Sync Failed. Tap to try again.";
+                isLocked = false;
                 step = 0;
             }
-        } 
-        else if (step === 3) {
-            document.getElementById('artist-card').className = 'glass-card visible';
-            startCountdown();
-        } 
-        else if (step === 4) {
-            document.getElementById('title-card').className = 'glass-card visible';
-            startCountdown();
-        } 
-        else if (step === 5) {
+        }, 2000);
+    }
+    function renderStep() {
+        if (step === 3) document.getElementById('artist-card').className = 'glass-card visible';
+        if (step === 4) document.getElementById('title-card').className = 'glass-card visible';
+        if (step === 5) {
             document.getElementById('year-card').className = 'glass-card visible';
-            status.innerText = "Round over. Click for next song.";
+            document.getElementById('status').innerText = "Round over. Click for next song.";
+            return;
         }
+        if (timerValue > 0) startCountdown();
     }
 
-    // --- 3. AUTH & API WRAPPER ---
+    function startCountdown() {
+        clearInterval(countdownInterval);
+        let current = timerValue;
+        const container = document.getElementById('countdown-container');
+        const val = document.getElementById('countdown-val');
+        container.style.display = 'block';
+        val.innerText = current;
+
+        countdownInterval = setInterval(() => {
+            current--;
+            val.innerText = current;
+            if (current <= 0) {
+                clearInterval(countdownInterval);
+                handleInteraction();
+            }
+        }, 1000);
+    }
+
+    async function togglePlayback() {
+        const data = await spotifyFetch('https://api.spotify.com/v1/me/player');
+        const action = (data && data.is_playing) ? 'pause' : 'play';
+        await spotifyFetch(`https://api.spotify.com/v1/me/player/${action}`, 'PUT');
+        document.getElementById('play-pause-btn').innerText = (action === 'play') ? '⏸' : '▶';
+    }
+
     async function spotifyFetch(url, method = 'GET') {
         try {
             const res = await fetch(url, {
@@ -204,8 +218,7 @@
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             if (res.status === 401) { startLoginFlow(); return null; }
-            if (res.status === 204) return {}; 
-            return await res.json();
+            return (res.status === 200) ? await res.json() : {};
         } catch (e) { return null; }
     }
 
@@ -213,65 +226,44 @@
         const verifier = generateRandomString(64);
         const challenge = await generateCodeChallenge(verifier);
         localStorage.setItem('code_verifier', verifier);
-
-        const params = new URLSearchParams({
-            client_id: CLIENT_ID,
-            response_type: 'code',
-            redirect_uri: REDIRECT_URI,
-            code_challenge_method: 'S256',
-            code_challenge: challenge,
-            scope: SCOPES
-        });
+        const params = new URLSearchParams({ client_id: CLIENT_ID, response_type: 'code', redirect_uri: REDIRECT_URI, code_challenge_method: 'S256', code_challenge: challenge, scope: SCOPES });
         window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
     }
 
-    function generateRandomString(length) {
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        const values = crypto.getRandomValues(new Uint8Array(length));
-        return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+    function generateRandomString(l) {
+        const p = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const v = crypto.getRandomValues(new Uint8Array(l));
+        return v.reduce((acc, x) => acc + p[x % p.length], "");
     }
 
-    async function generateCodeChallenge(codeVerifier) {
-        const data = new TextEncoder().encode(codeVerifier);
-        const digest = await crypto.subtle.digest('SHA-256', data);
-        return btoa(String.fromCharCode(...new Uint8Array(digest)))
-            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    async function generateCodeChallenge(v) {
+        const d = new TextEncoder().encode(v);
+        const digest = await crypto.subtle.digest('SHA-256', d);
+        return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
     window.onload = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
-        
         if (code) {
             const codeVerifier = localStorage.getItem('code_verifier');
             const response = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    client_id: CLIENT_ID,
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: REDIRECT_URI,
-                    code_verifier: codeVerifier
-                })
+                body: new URLSearchParams({ client_id: CLIENT_ID, grant_type: 'authorization_code', code: code, redirect_uri: REDIRECT_URI, code_verifier: codeVerifier })
             });
             const data = await response.json();
             if (data.access_token) {
                 accessToken = data.access_token;
                 localStorage.setItem('access_token', accessToken);
-                window.history.replaceState({}, document.title, "/"); 
+                window.history.replaceState({}, document.title, window.location.pathname); 
             }
         }
-
         if (accessToken) {
             document.getElementById('login-btn').style.display = 'none';
-            document.getElementById('display').style.display = 'flex';
-            document.getElementById('status').innerText = "Logged in. Click to play.";
+            document.getElementById('display-area').style.display = 'flex';
         }
     };
 </script>
 </body>
-
 </html>
-
-
